@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student CRUD</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Student List</h1>
+        <button class="btn btn-primary mb-3" onclick="showAddStudentModal()">Add Student</button>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Roll</th>
+                    <th>Class</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="studentTableBody">
+                <!-- Data will be populated here by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Add/Edit Student Modal -->
+    <div class="modal" tabindex="-1" role="dialog" id="studentModal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Add Student</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="studentForm">
+                        <input type="hidden" id="studentId">
+                        <div class="form-group">
+                            <label for="studentName">Name</label>
+                            <input type="text" class="form-control" id="studentName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="studentRoll">Roll</label>
+                            <input type="text" class="form-control" id="studentRoll" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="studentClass">Class</label>
+                            <input type="text" class="form-control" id="studentClass" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="saveStudent()">Save</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        let url='http://localhost:3000'
+        $(document).ready(function() {
+            loadStudents();
+        });
+
+        function loadStudents() {
+            $.get(`https://nodejs-curd-ovgn.onrender.com/students`, function(data) {
+                const studentTableBody = $('#studentTableBody');
+                studentTableBody.empty();
+                data.forEach(student => {
+                    studentTableBody.append(`
+                        <tr>
+                            <td>${student.id}</td>
+                            <td>${student.name}</td>
+                            <td>${student.roll}</td>
+                            <td>${student.class}</td>
+                            <td>
+                                <button class="btn btn-warning btn-sm" onclick="showEditStudentModal(${student.id})">Edit</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteStudent(${student.id})">Delete</button>
+                            </td>
+                        </tr>
+                    `);
+                });
+            });
+        }
+
+        function showAddStudentModal() {
+            $('#modalTitle').text('Add Student');
+            $('#studentId').val('');
+            $('#studentName').val('');
+            $('#studentRoll').val('');
+            $('#studentClass').val('');
+            $('#studentModal').modal('show');
+        }
+
+        function showEditStudentModal(id) {
+            $.get(`https://nodejs-curd-ovgn.onrender.com/students/${id}`, function(student) {
+                $('#modalTitle').text('Edit Student');
+                $('#studentId').val(student.id);
+                $('#studentName').val(student.name);
+                $('#studentRoll').val(student.roll);
+                $('#studentClass').val(student.class);
+                $('#studentModal').modal('show');
+            });
+        }
+
+        function saveStudent() {
+            const id = $('#studentId').val();
+            const student = {
+                name: $('#studentName').val(),
+                roll: $('#studentRoll').val(),
+                class: $('#studentClass').val()
+            };
+
+            if (id) {
+                // Update student
+                $.ajax({
+                    url: `https://nodejs-curd-ovgn.onrender.com/students/${id}`,
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify(student),
+                    success: function() {
+                        $('#studentModal').modal('hide');
+                        loadStudents();
+                    }
+                });
+            } else {
+                // Create new student
+                student.id = new Date().getTime(); // Simple ID generation
+                $.ajax({
+                    url: 'https://nodejs-curd-ovgn.onrender.com/students',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(student),
+                    success: function() {
+                        $('#studentModal').modal('hide');
+                        loadStudents();
+                    }
+                });
+            }
+        }
+
+        function deleteStudent(id) {
+            if (confirm('Are you sure you want to delete this student?')) {
+                $.ajax({
+                    url: `https://nodejs-curd-ovgn.onrender.com/students/${id}`,
+                    type: 'DELETE',
+                    success: function() {
+                        loadStudents();
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>
